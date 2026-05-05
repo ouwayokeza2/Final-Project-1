@@ -22,15 +22,13 @@ st.set_page_config(
 def load_data() -> pd.DataFrame:
     """Load the dashboard data."""
     if not DATA_PATH.exists():
-        st.error(
-            "Data file not found. Run `python fetch_bls_data.py` first, "
-            "then restart the Streamlit app."
-        )
-        st.stop()
+        st.info("Data file not found. Fetching BLS data now...")
+        from fetch_bls_data import update_dataset
+        update_dataset()
 
     df = pd.read_csv(DATA_PATH, parse_dates=["date"])
     df = df.sort_values(["indicator", "date"])
-    return df
+    return df    
 
 
 df = load_data()
