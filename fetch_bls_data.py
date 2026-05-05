@@ -61,6 +61,8 @@ def fetch_bls_series(series_ids: List[str], start_year: int, end_year: int) -> p
             year = int(item["year"])
             date = pd.Timestamp(year=year, month=month, day=1)
 
+            value = pd.to_numeric(item.get("value"), errors="coerce")
+
             rows.append(
                 {
                     "date": date,
@@ -68,7 +70,7 @@ def fetch_bls_series(series_ids: List[str], start_year: int, end_year: int) -> p
                     "month": month,
                     "series_id": series_id,
                     "indicator": indicator,
-                    "value": float(item["value"]),
+                    "value": value,
                     "latest": item.get("latest", False),
                 }
             )
@@ -77,6 +79,11 @@ def fetch_bls_series(series_ids: List[str], start_year: int, end_year: int) -> p
 
     if df.empty:
         raise ValueError("No data returned from BLS API.")
+
+    df = df.dropna(subset=["value"])
+
+    if df.empty:
+        raise ValueError("BLS API returned data, but no valid numeric values were found.")
 
     df = df.sort_values(["indicator", "date"]).reset_index(drop=True)
     df["month_to_month_change"] = df.groupby("indicator")["value"].diff()
@@ -108,6 +115,7 @@ def update_dataset() -> pd.DataFrame:
     else:
         combined = new_data
 
+    combined = combined.dropna(subset=["value"])
     combined = combined.sort_values(["indicator", "date"]).reset_index(drop=True)
     combined["month_to_month_change"] = combined.groupby("indicator")["value"].diff()
 
